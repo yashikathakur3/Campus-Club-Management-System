@@ -9,8 +9,8 @@ async function connectDB(uri = (env || validateEnv()).MONGO_URI) {
   return mongoose.connection;
 }
 
-mongoose.connection.on('error', (error) => {
-  console.error(`MongoDB connection error: ${error.message}`);
+mongoose.connection.on('error', () => {
+  console.error('MongoDB connection error; check MONGO_URI and database availability.');
 });
 mongoose.connection.on('disconnected', () => {
   console.warn('MongoDB disconnected');

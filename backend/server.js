@@ -17,8 +17,8 @@ async function startServer() {
       console.log(`Server listening on port ${config.PORT}`);
     });
     return server;
-  } catch (error) {
-    console.error(`Server startup failed: ${error.message}`);
+  } catch {
+    console.error('Server startup failed: MongoDB connection could not be established.');
     process.exit(1);
   }
 }
