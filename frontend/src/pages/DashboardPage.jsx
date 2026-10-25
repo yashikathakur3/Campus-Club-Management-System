@@ -1,4 +1,4 @@
-import { ArrowUpRight, CalendarDays, Sparkles, UsersRound } from 'lucide-react';
+import { ArrowUpRight, CalendarDays, Compass, Sparkles, UsersRound } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import Badge from '../components/ui/Badge';
@@ -25,8 +25,8 @@ export default function DashboardPage() {
         </div>
       </Card>
       <div className="mb-7 grid gap-4 sm:grid-cols-2">
-        <Card className="flex items-start gap-4"><span className="grid h-11 w-11 place-items-center rounded-xl bg-indigo-50 text-brand"><UsersRound aria-hidden="true" className="h-5 w-5" /></span><div><h2 className="text-sm font-semibold text-slate-900">Your clubs</h2><p className="mt-1 text-sm leading-6 text-slate-500">Membership details will appear once the club directory is ready.</p></div></Card>
-        <Card className="flex items-start gap-4"><span className="grid h-11 w-11 place-items-center rounded-xl bg-amber-50 text-amber-700"><CalendarDays aria-hidden="true" className="h-5 w-5" /></span><div><h2 className="text-sm font-semibold text-slate-900">Your next event</h2><p className="mt-1 text-sm leading-6 text-slate-500">Events from your communities will be collected here.</p></div></Card>
+        <Card className="flex items-start gap-4"><span className="grid h-11 w-11 place-items-center rounded-xl bg-indigo-50 text-brand"><UsersRound aria-hidden="true" className="h-5 w-5" /></span><div><h2 className="text-sm font-semibold text-slate-900">Your clubs</h2><p className="mt-1 text-sm leading-6 text-slate-500">See your memberships and pending requests.</p><Link to="/app/clubs/mine" className="mt-2 inline-flex items-center gap-1 text-sm font-semibold text-brand">Open My Clubs<ArrowUpRight aria-hidden="true" className="h-4 w-4" /></Link></div></Card>
+        <Card className="flex items-start gap-4"><span className="grid h-11 w-11 place-items-center rounded-xl bg-amber-50 text-amber-700"><CalendarDays aria-hidden="true" className="h-5 w-5" /></span><div><h2 className="text-sm font-semibold text-slate-900">Your next event</h2><p className="mt-1 text-sm leading-6 text-slate-500">Events will appear here after you register for one.</p><Link to="/clubs" className="mt-2 inline-flex items-center gap-1 text-sm font-semibold text-brand">Browse clubs<Compass aria-hidden="true" className="h-4 w-4" /></Link></div></Card>
       </div>
       <EmptyState icon={Sparkles} title="Your campus space is taking shape" description="More of your community will show up here in upcoming updates." />
     </div>

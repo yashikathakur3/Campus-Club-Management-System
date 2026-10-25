@@ -23,7 +23,7 @@ export default function PublicLayout() {
             <span className="text-sm font-bold tracking-tight sm:text-base">Campus<span className="text-brand">Club</span></span>
           </Link>
           <div className="hidden items-center gap-7 sm:flex">
-            <Link className="text-sm font-medium text-slate-600 transition hover:text-brand" to="/#clubs">Clubs</Link>
+            <Link className="text-sm font-medium text-slate-600 transition hover:text-brand" to="/clubs">Clubs</Link>
             <Link className="text-sm font-medium text-slate-600 transition hover:text-brand" to="/#events">Events</Link>
           </div>
           <div className="flex items-center gap-2">

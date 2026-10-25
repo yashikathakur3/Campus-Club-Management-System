@@ -1,0 +1,21 @@
+const express = require('express');
+const { authenticate, optionalAuth } = require('../middleware/auth');
+const { requireSuperAdmin } = require('../middleware/authorize');
+const validate = require('../middleware/validate');
+const asyncHandler = require('../utils/asyncHandler');
+const controller = require('../controllers/clubController');
+const schemas = require('../validators/clubValidators');
+const requireClubRole = require('../middleware/requireClubRole');
+
+const router = express.Router();
+router.get('/', optionalAuth, validate({ query: schemas.listClubsSchema }), asyncHandler(controller.list));
+router.post('/', authenticate, requireSuperAdmin, validate({ body: schemas.createClubSchema }), asyncHandler(controller.create));
+router.get('/:id/members', authenticate, validate({ params: schemas.clubIdParams, query: schemas.memberListSchema }), (req, res, next) => requireClubRole(req.query.status === 'pending' ? 'president' : 'member', 'coordinator', 'president')(req, res, next), asyncHandler(controller.members));
+router.patch('/:id/members/:userId', authenticate, validate({ params: schemas.memberUserParams, body: schemas.memberPatch }), requireClubRole('president'), asyncHandler(controller.patchMember));
+router.post('/:id/transfer-presidency', authenticate, validate({ params: schemas.clubIdParams, body: schemas.transferSchema }), requireClubRole('president'), asyncHandler(controller.transfer));
+router.patch('/:id/status', authenticate, requireSuperAdmin, validate({ params: schemas.clubIdParams, body: schemas.statusSchema }), asyncHandler(controller.status));
+router.patch('/:id', authenticate, validate({ params: schemas.clubIdParams, body: schemas.patchClubSchema }), requireClubRole('president'), asyncHandler(controller.patch));
+router.post('/:id/join', authenticate, validate({ params: schemas.clubIdParams, body: schemas.joinSchema }), asyncHandler(controller.join));
+router.post('/:id/leave', authenticate, validate({ params: schemas.clubIdParams }), asyncHandler(controller.leave));
+router.get('/:id', optionalAuth, validate({ params: schemas.clubIdParams }), asyncHandler(controller.get));
+module.exports = router;

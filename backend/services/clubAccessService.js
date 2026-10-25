@@ -1,11 +1,9 @@
+const ClubMembership = require('../models/ClubMembership');
 const ApiError = require('../utils/ApiError');
 
-// Phase 5 will provide ClubMembership and replace this null lookup with its model query.
-// Keeping this interface now lets club routes share one authorization contract.
 async function getMembership(userId, clubId) {
-  void userId;
-  void clubId;
-  return null;
+  if (!userId || !clubId) return null;
+  return ClubMembership.findOne({ club: clubId, user: userId, status: 'active' });
 }
 
 async function assertClubRole(user, clubId, allowedClubRoles) {

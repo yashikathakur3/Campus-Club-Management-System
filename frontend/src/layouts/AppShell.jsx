@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Bell, ChevronDown, LayoutDashboard, LogOut, Menu, ShieldCheck, UserRound, X } from 'lucide-react';
+import { Bell, ChevronDown, LayoutDashboard, LogOut, Menu, ShieldCheck, UserRound, X, UsersRound, Compass, Plus } from 'lucide-react';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import clsx from 'clsx';
 import { useAuth } from '../context/AuthContext';
@@ -7,11 +7,13 @@ import Avatar from '../components/ui/Avatar';
 
 const navigation = [
   { to: '/app/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { to: '/clubs', label: 'Clubs', icon: Compass },
+  { to: '/app/clubs/mine', label: 'My Clubs', icon: UsersRound },
   { to: '/app/profile', label: 'Profile', icon: UserRound },
 ];
 
 function Sidebar({ open, onClose, user }) {
-  const items = user?.role === 'super_admin' ? [...navigation.slice(0, 1), { to: '/app/admin/users', label: 'Users', icon: ShieldCheck }, navigation[1]] : navigation;
+  const items = user?.role === 'super_admin' ? [...navigation.slice(0, 3), { to: '/app/clubs/new', label: 'Create club', icon: Plus }, { to: '/app/admin/users', label: 'Users', icon: ShieldCheck }, navigation[3]] : navigation;
   return <>
     {open && <button type="button" aria-label="Close navigation" onClick={onClose} className="fixed inset-0 z-40 bg-slate-950/50 md:hidden" />}
     <aside className={clsx('fixed inset-y-0 left-0 z-50 flex w-64 flex-col bg-navy text-white transition-transform duration-180 motion-reduce:transition-none', open ? 'translate-x-0' : '-translate-x-full md:translate-x-0')}>
@@ -47,7 +49,7 @@ export default function AppShell() {
   const [profileOpen, setProfileOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const page = [...navigation, { to: '/app/admin/users', label: 'Users' }].find((item) => item.to === location.pathname)?.label || 'Campus Club';
+  const page = [...navigation, { to: '/app/admin/users', label: 'Users' }, { to: '/app/clubs/new', label: 'Create club' }].find((item) => item.to === location.pathname)?.label || 'Campus Club';
 
   function handleLogout() {
     logout();

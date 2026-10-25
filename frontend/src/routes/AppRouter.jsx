@@ -13,6 +13,13 @@ import ForbiddenPage from '../pages/ForbiddenPage';
 import NotFoundPage from '../pages/NotFoundPage';
 import AdminUsersPage from '../pages/AdminUsersPage';
 import RoleRoute from './RoleRoute';
+import ClubRoleRoute from './ClubRoleRoute';
+import ClubDirectoryPage from '../pages/ClubDirectoryPage';
+import ClubDetailPage from '../pages/ClubDetailPage';
+import MyClubsPage from '../pages/MyClubsPage';
+import CreateClubPage from '../pages/CreateClubPage';
+import EditClubPage from '../pages/EditClubPage';
+import ManageClubPage from '../pages/ManageClubPage';
 
 function PublicOnly({ children }) {
   const { user } = useAuth();
@@ -27,6 +34,8 @@ export default function AppRouter() {
     <Routes>
       <Route element={<PublicLayout />}>
         <Route index element={<LandingPage />} />
+        <Route path="clubs" element={<ClubDirectoryPage />} />
+        <Route path="clubs/:id" element={<ClubDetailPage />} />
         <Route path="login" element={<PublicOnly><LoginPage /></PublicOnly>} />
         <Route path="register" element={<PublicOnly><RegisterPage /></PublicOnly>} />
       </Route>
@@ -36,9 +45,13 @@ export default function AppRouter() {
           <Route index element={<Navigate to="dashboard" replace />} />
           <Route path="dashboard" element={<DashboardPage />} />
           <Route path="profile" element={<ProfilePage />} />
+          <Route path="clubs/mine" element={<MyClubsPage />} />
           <Route element={<RoleRoute allowedRoles={['super_admin']} />}>
             <Route path="admin/users" element={<AdminUsersPage />} />
+            <Route path="clubs/new" element={<CreateClubPage />} />
           </Route>
+          <Route path="clubs/:id/edit" element={<ClubRoleRoute allowedClubRoles={['president']} />}><Route index element={<EditClubPage />} /></Route>
+          <Route path="clubs/:id/manage" element={<ClubRoleRoute allowedClubRoles={['president']} />}><Route index element={<ManageClubPage />} /></Route>
         </Route>
       </Route>
       <Route path="*" element={<NotFoundPage />} />

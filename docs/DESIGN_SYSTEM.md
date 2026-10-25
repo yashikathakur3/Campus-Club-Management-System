@@ -36,6 +36,10 @@ All components are in `frontend/src/components/ui` and accept normal class compo
 
 The Profile page uses the shared `Tabs`, `Input`, `Select`, `Textarea`, `Avatar`, and `Badge` components for profile editing and password security. The admin Users page uses responsive desktop tables and mobile cards, shared search/filter/pagination components, status and role badges, skeletons, an empty state, and `ConfirmDialog` before role or account status changes. Only super admins see the Users navigation item; the admin route also enforces the role at the router boundary.
 
+## Phase 5 club pages
+
+The public Clubs directory uses a compact hero, category chips, debounced search, sorting, responsive ClubCards, and shared loading, empty, error, and pagination patterns. Club detail pages show leadership to visitors and member previews only to members. Club forms and management reuse the shared controls, tabs, badges, avatars, and confirmation dialogs. The app sidebar links to Clubs and My Clubs; club creation is visible only to super admins.
+
 ## Accessibility
 
 Use semantic headings and navigation landmarks, visible focus indicators, explicit form labels, accessible names for icon-only controls, and reduced-motion-safe transitions. Sidebar navigation collapses into a dismissible mobile drawer. Notifications are intentionally disabled until Phase 8 wires the real notification center; no unread count is fabricated.

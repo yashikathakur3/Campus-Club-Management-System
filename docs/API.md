@@ -61,10 +61,10 @@ Errors: 400 `VALIDATION_ERROR`; 401 `UNAUTHENTICATED` with the same message for 
 Requires a valid access token. Returns HTTP 200:
 
 ```json
-{ "success": true, "data": { "user": {}, "memberships": [] } }
+{ "success": true, "data": { "user": {}, "memberships": [{ "club": { "_id": "...", "name": "Robotics", "slug": "robotics", "logoUrl": "..." }, "clubRole": "member", "status": "active", "canAnnounce": false }] } }
 ```
 
-`memberships` is intentionally empty until the club membership phase. Errors: 401 `UNAUTHENTICATED`; 403 `ACCOUNT_DISABLED`.
+Memberships with rejected status are omitted. Errors: 401 `UNAUTHENTICATED`; 403 `ACCOUNT_DISABLED`.
 
 ### `PATCH /api/v1/auth/me`
 
@@ -88,8 +88,6 @@ Returns `{ "success": true, "data": { "user": {} } }`. Invalid MongoDB IDs retur
 
 Strict JSON body accepts one or both of `role` (`super_admin | member`) and `isActive` (boolean). Unknown fields and an empty body return 400. Returns `{ "success": true, "data": { "user": {} } }`. A super admin cannot change their own role or deactivate themselves (400 `SELF_MODIFICATION_FORBIDDEN`). The last active super admin cannot be demoted or deactivated (409 `LAST_SUPER_ADMIN`). Every actual role or active-state change increments `tokenVersion`, invalidating that user's existing access tokens. Missing users return 404.
 
-Club role checks are exposed by `services/clubAccessService.js`. Its `getMembership(userId, clubId)` placeholder deliberately returns no membership until Phase 5 creates `ClubMembership`; `assertClubRole` already grants super admins access and rejects other users until that membership implementation exists.
-
 ### `PATCH /api/v1/auth/me/password`
 
 Requires a valid access token. Request: `{ "currentPassword": "CampusPass123", "newPassword": "NewCampusPass456" }`. On success, increments `tokenVersion` to invalidate previous tokens and returns HTTP 200 with `{ "success": true, "data": { "user": {}, "token": "<new access token>" } }`.
@@ -99,3 +97,51 @@ Errors: 400 `VALIDATION_ERROR` or `INVALID_CURRENT_PASSWORD`; 401 `UNAUTHENTICAT
 ## Super Admin provisioning
 
 There is no public Super Admin registration endpoint. Set `SEED_ADMIN_EMAIL` and a strong `SEED_ADMIN_PASSWORD` in the local backend environment, then run `npm run seed:admin` from `backend`. The seed password must be at least 16 characters and include a letter, number, and symbol. The command is idempotent and never prints the password. If the configured email belongs to a regular member, the script refuses to change that account's role.
+
+## Clubs and memberships
+
+Club categories are `technical`, `cultural`, `sports`, `academic`, `social_service`, `arts`, and `other`. Club membership roles are `member`, `coordinator`, and `president`; statuses are `pending`, `active`, `rejected`, `left`, and `removed`. A club has one active president membership. Membership uniqueness is enforced by a unique `{club,user}` index, including when a prior membership has left or been rejected; re-requests reuse that record.
+
+### `GET /api/v1/clubs`
+
+Public. Query: `q`, `category`, `page` (default 1), `limit` (default 12, max 50), `sort` (`name | createdAt | memberCount`), `order` (`asc | desc`), and `includeInactive=true` (honored only for a super admin). Returns active clubs by default with pagination metadata.
+
+### `GET /api/v1/clubs/:id`
+
+Public; `:id` accepts the MongoDB id or slug. Returns `{ club, president, coordinators, membersPreview?, myMembership }`. Member profiles in `membersPreview` are included only for active club members or super admins. Guests see the count and leadership only. Invalid id/slug syntax returns 400; a valid but unknown id/slug returns 404.
+
+### `POST /api/v1/clubs`
+
+Super admin only. Required body: `{ name, category, presidentUserId }`. Optional fields: `description`, `logoUrl`, `bannerUrl`, `contactEmail`, `socialLinks` (`website`, `instagram`, `facebook`, `linkedin`), and `joinPolicy` (`open | approval`, default `approval`). Creates the club and an active president membership. `presidentUserId` must identify an active user. Duplicate case-insensitive club names return 409.
+
+### `PATCH /api/v1/clubs/:id`
+
+Requires the club's active president or a super admin. Strict editable fields: `name`, `description`, `category`, `logoUrl`, `bannerUrl`, `contactEmail`, `socialLinks`, and `joinPolicy`. Unknown fields return 400.
+
+### `PATCH /api/v1/clubs/:id/status`
+
+Super admin only. Body `{ "isActive": boolean }`. Deactivation hides the club from the public directory and prevents joining; existing membership rows remain intact.
+
+### `POST /api/v1/clubs/:id/transfer-presidency`
+
+Requires the club's active president or a super admin. Body `{ "userId": "..." }`; the target must be an active member or coordinator. The former president becomes a coordinator.
+
+### `POST /api/v1/clubs/:id/join`
+
+Requires authentication. Optional body `{ "message": "..." }`. Open clubs create/reactivate an active membership; approval clubs create/reactivate a pending membership. Duplicate active or pending attempts return 409 (`ALREADY_MEMBER` or `ALREADY_PENDING`). Inactive clubs return 409 `CLUB_INACTIVE`.
+
+### `POST /api/v1/clubs/:id/leave`
+
+Requires authentication. Active members become `left`; a pending request can also be withdrawn. Active member count is decremented once. Presidents receive 409 `PRESIDENT_CANNOT_LEAVE` until transferring the presidency.
+
+### `GET /api/v1/clubs/:id/members`
+
+Requires an active club membership or super admin. Accepts `page`, `limit` (max 50), and `status=active|pending`. Pending requests are visible only to the club president or a super admin. Deactivated users are filtered from both lists.
+
+### `PATCH /api/v1/clubs/:id/members/:userId`
+
+Requires the club's active president or a super admin. Strict body accepts `status=active|rejected|removed`, `clubRole=member|coordinator`, and/or `canAnnounce` boolean. Only pending memberships can be approved/rejected; only active non-president memberships can be removed or updated. An inactive user cannot be approved. The president membership cannot be changed here.
+
+### `GET /api/v1/me/memberships`
+
+Requires authentication. Returns the current user's pending and active memberships with the club summary, `clubRole`, `status`, and `canAnnounce`.

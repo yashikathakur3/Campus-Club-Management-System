@@ -31,14 +31,18 @@ export function AuthProvider({ children }) {
   const login = useCallback(async (credentials) => {
     const data = await authApi.login(credentials);
     writeToken(data.token);
-    setSession({ user: data.user, memberships: [], token: data.token, loading: false });
+    let current = null;
+    try { current = await authApi.getMe(); } catch { /* Keep the successful login if membership refresh is temporarily unavailable. */ }
+    setSession({ user: current?.user || data.user, memberships: current?.memberships || [], token: data.token, loading: false });
     return data;
   }, []);
 
   const register = useCallback(async (details) => {
     const data = await authApi.register(details);
     writeToken(data.token);
-    setSession({ user: data.user, memberships: [], token: data.token, loading: false });
+    let current = null;
+    try { current = await authApi.getMe(); } catch { /* Keep the successful registration if membership refresh is temporarily unavailable. */ }
+    setSession({ user: current?.user || data.user, memberships: current?.memberships || [], token: data.token, loading: false });
     return data;
   }, []);
 

@@ -2,6 +2,7 @@ const bcrypt = require('bcryptjs');
 const User = require('../models/User');
 const ApiError = require('../utils/ApiError');
 const { signAccessToken } = require('../utils/token');
+const ClubMembership = require('../models/ClubMembership');
 
 const BCRYPT_ROUNDS = 12;
 
@@ -27,7 +28,14 @@ async function login({ email, password }) {
 async function getCurrentUser(userId) {
   const user = await User.findById(userId);
   if (!user) throw new ApiError(401, 'UNAUTHENTICATED', 'Authentication is required or the token is invalid');
-  return { user, memberships: [] };
+  const memberships = await ClubMembership.find({ user: userId, status: { $ne: 'rejected' } })
+    .populate({ path: 'club', select: 'name slug logoUrl' }).sort({ updatedAt: -1 });
+  return { user, memberships: memberships.filter((membership) => membership.club).map((membership) => ({
+    club: membership.club,
+    clubRole: membership.clubRole,
+    status: membership.status,
+    canAnnounce: membership.canAnnounce,
+  })) };
 }
 
 async function updateProfile(userId, changes) {
