@@ -9,6 +9,9 @@ const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
 const clubRoutes = require('./routes/clubRoutes');
 const myMembershipRoutes = require('./routes/myMembershipRoutes');
+const eventRoutes = require('./routes/eventRoutes');
+const clubEventRoutes = require('./routes/clubEventRoutes');
+const myEventRoutes = require('./routes/myEventRoutes');
 const notFound = require('./middleware/notFound');
 const errorHandler = require('./middleware/errorHandler');
 
@@ -24,7 +27,10 @@ app.use('/api/v1', routes);
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/users', userRoutes);
 app.use('/api/v1/clubs', clubRoutes);
+app.use('/api/v1/clubs', clubEventRoutes);
+app.use('/api/v1/events', eventRoutes);
 app.use('/api/v1/me/memberships', myMembershipRoutes);
+app.use('/api/v1/me/registrations', myEventRoutes);
 app.use(notFound);
 app.use(errorHandler);
 

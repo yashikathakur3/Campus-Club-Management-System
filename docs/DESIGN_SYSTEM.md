@@ -40,6 +40,10 @@ The Profile page uses the shared `Tabs`, `Input`, `Select`, `Textarea`, `Avatar`
 
 The public Clubs directory uses a compact hero, category chips, debounced search, sorting, responsive ClubCards, and shared loading, empty, error, and pagination patterns. Club detail pages show leadership to visitors and member previews only to members. Club forms and management reuse the shared controls, tabs, badges, avatars, and confirmation dialogs. The app sidebar links to Clubs and My Clubs; club creation is visible only to super admins.
 
+## Phase 6 event pages
+
+The public Events directory uses debounced search, category/club/date filters, upcoming/past and availability filters, responsive event cards, capacity meters, skeletons, pagination, and explicit empty/error states. Event detail pages show timezone-aware dates, club links, capacity, and the registration state. Event registration changes are followed by a server refetch; unregister uses `ConfirmDialog`. Event forms use shared inputs and confirmation dialogs for publish/cancel. Attendee and My Events views use shared avatar, search, tab, pagination, loading, and empty-state components.
+
 ## Accessibility
 
 Use semantic headings and navigation landmarks, visible focus indicators, explicit form labels, accessible names for icon-only controls, and reduced-motion-safe transitions. Sidebar navigation collapses into a dismissible mobile drawer. Notifications are intentionally disabled until Phase 8 wires the real notification center; no unread count is fabricated.

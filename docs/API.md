@@ -145,3 +145,43 @@ Requires the club's active president or a super admin. Strict body accepts `stat
 ### `GET /api/v1/me/memberships`
 
 Requires authentication. Returns the current user's pending and active memberships with the club summary, `clubRole`, `status`, and `canAnnounce`.
+
+## Events and registrations
+
+Event categories are `workshop`, `competition`, `social`, `meeting`, `talk`, and `other`. Event visibility is `public | members_only`; lifecycle status is `draft | published | cancelled | completed`. Registration status is `registered | cancelled | waitlisted` (waitlisting is reserved and is not currently used). Event capacities are positive integers. `spotsLeft` is `max(0, capacity - registeredCount)`. Public event list reads only return published events; they compute `isPast` without writing. Reading a single elapsed published event lazily marks it completed. This means an event list request has no lifecycle write side effects.
+
+### `GET /api/v1/events`
+
+Public. Query: `q` (case-insensitive literal title/description search), `category`, `clubId`, `when=upcoming|past`, ISO `from` and `to` (filter start date), `available=true|false`, `sort=startsAt`, `order=asc|desc`, `page`, and `limit` (maximum 50). Each event includes `spotsLeft`, `isPast`, and a compact populated club summary. Returns event array and pagination metadata.
+
+### `GET /api/v1/events/:id`
+
+Published, cancelled, and completed event details are readable by everyone so registrants can see lifecycle changes. Drafts are returned only to the club president, a coordinator assigned to that event, or a super admin; others receive 404. The response includes `registeredCount`, `spotsLeft`, `isPast`, compact club details, and authenticated `myRegistration` (or `null`). Elapsed published events are lazily marked completed on this detail read.
+
+### `POST /api/v1/clubs/:clubId/events`
+
+Requires the active club president, an active club coordinator, or a super admin. Body: `title`, `description`, `category`, `startsAt`, `endsAt`, `location`, positive integer `capacity`; optional `registrationDeadline` (defaults to `startsAt` and cannot be later), `posterUrl`, `visibility`, and `coordinators` (active coordinators of this club). `endsAt` must be after `startsAt`. Coordinator-created events are always drafts. President and super-admin created events also begin as drafts. Returns HTTP 201.
+
+### `GET /api/v1/clubs/:clubId/events`
+
+Requires an active president/coordinator or super admin. Includes drafts and other statuses for that club. Query: `page`, `limit` (maximum 50), and optional lifecycle `status`.
+
+### `PATCH /api/v1/events/:id`
+
+Requires the club president, super admin, or the coordinator assigned to that event. Accepts strict event content/date/capacity/visibility/coordinator fields. End must remain after start, deadline cannot follow start, and capacity cannot be set below the current registered count (409 `CAPACITY_BELOW_REGISTERED`). Cancelled and completed events cannot be edited (409 `EVENT_LOCKED`).
+
+### `PATCH /api/v1/events/:id/status`
+
+Requires the club president or super admin. Body `{ "action": "publish" | "cancel" }`. Publishing is allowed only from draft. Cancelling preserves registrations as history and calls the notification service for registered users (delivery remains a Phase 8 stub). Repeated cancellation is idempotent.
+
+### `POST /api/v1/events/:id/register` and `DELETE /api/v1/events/:id/register`
+
+Require authentication. Super admins may register for any event. Registration requires a published, not-ended event whose deadline has not passed; members-only events additionally require an active club membership. Conflicts: 409 `EVENT_NOT_OPEN`, `REGISTRATION_CLOSED`, `EVENT_FULL`, or `ALREADY_REGISTERED`; missing events return 404 and membership-only access returns 403. Seat reservation is an atomic conditional increment and registration uniqueness is enforced by `{event,user}`; failed writes compensate by decrementing the reserved count. Delete conditionally cancels a registration and decrements capacity once. Repeated cancellation returns HTTP 200 with an already-cancelled message and does not decrement again.
+
+### `GET /api/v1/events/:id/registrations`
+
+Requires the club president, super admin, or an assigned event coordinator. Query: `q` (literal name/email/student ID search), `page`, and `limit` (maximum 50). Returns registered attendees and pagination metadata; summary includes registered count, capacity, and spots left.
+
+### `GET /api/v1/me/registrations`
+
+Requires authentication. Query: `status=registered|cancelled|waitlisted`, `when=upcoming|past`, `page`, and `limit` (maximum 50). Returns the current user's event registrations with populated event and club summaries.

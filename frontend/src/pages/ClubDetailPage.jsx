@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { CalendarDays, Globe2, Instagram, Mail, UsersRound } from 'lucide-react';
 import { getClub, joinClub, leaveClub } from '../api/clubs';
+import { listEvents } from '../api/events';
 import { useAuth } from '../context/AuthContext';
 import Avatar from '../components/ui/Avatar';
 import Badge from '../components/ui/Badge';
@@ -24,11 +25,18 @@ export default function ClubDetailPage() {
   const [loading, setLoading] = useState(true);
   const [confirmLeave, setConfirmLeave] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [upcomingEvents, setUpcomingEvents] = useState([]);
+  const [eventsError, setEventsError] = useState('');
   const canManage = user?.role === 'super_admin' || data?.myMembership?.clubRole === 'president' && data?.myMembership?.status === 'active';
 
   const load = useCallback(async () => {
     setLoading(true); setError('');
-    try { setData(await getClub(id)); }
+    try {
+      const clubData = await getClub(id);
+      setData(clubData);
+      try { const result = await listEvents({ clubId: clubData.club._id, when: 'upcoming', page: 1, limit: 3 }); setUpcomingEvents(result.data); setEventsError(''); }
+      catch (eventError) { setEventsError(eventError.message || 'Could not load events.'); }
+    }
     catch (requestError) { setError(requestError.message || 'Could not load this club.'); }
     finally { setLoading(false); }
   }, [id]);
@@ -77,7 +85,7 @@ export default function ClubDetailPage() {
         <div className="space-y-6">
           <Card><h2 className="text-lg font-bold text-slate-900">Club leadership</h2><div className="mt-4 grid gap-3 sm:grid-cols-2">{president ? <div className="flex items-center gap-3 rounded-xl bg-slate-50 p-3"><Avatar name={president.name} src={president.avatarUrl} size="md" /><div><p className="text-sm font-semibold text-slate-900">{president.name}</p><p className="text-xs text-slate-500">President</p></div></div> : <p className="text-sm text-slate-500">No president listed.</p>}{coordinators.map((person) => <div key={person._id} className="flex items-center gap-3 rounded-xl bg-slate-50 p-3"><Avatar name={person.name} src={person.avatarUrl} size="md" /><div><p className="text-sm font-semibold text-slate-900">{person.name}</p><p className="text-xs text-slate-500">Coordinator</p></div></div>)}</div></Card>
           <Card><h2 className="text-lg font-bold text-slate-900">Members</h2>{membersPreview ? membersPreview.length ? <div className="mt-4 flex flex-wrap gap-2">{membersPreview.map((person) => <span key={person._id} title={person.name}><Avatar name={person.name} src={person.avatarUrl} size="md" /></span>)}</div> : <p className="mt-2 text-sm text-slate-500">There are no other members to show yet.</p> : <p className="mt-2 text-sm text-slate-500">Join this club to see member profiles. There are {club.memberCount} members.</p>}</Card>
-          <Card><h2 className="text-lg font-bold text-slate-900">Upcoming events</h2><div className="mt-4"><EmptyState icon={CalendarDays} title="No events yet" description="Events for this club will appear here when they are published." /></div></Card>
+          <Card><div className="flex items-center justify-between gap-3"><h2 className="text-lg font-bold text-slate-900">Upcoming events</h2>{(canManage || coordinators.some((person) => person._id === user?._id)) && <Link className="text-sm font-semibold text-brand" to={`/app/events/new?club=${club._id}`}>Create event</Link>}</div><div className="mt-4">{eventsError ? <p role="alert" className="text-sm text-danger">{eventsError}</p> : upcomingEvents.length ? <div className="space-y-3">{upcomingEvents.map((event) => <Link key={event._id} to={`/events/${event._id}`} className="flex items-center gap-3 rounded-xl border border-slate-100 p-3 transition hover:border-brand/40"><span className="grid h-12 w-12 shrink-0 place-items-center rounded-lg bg-indigo-50 text-center"><span><strong className="block leading-4 text-brand">{new Date(event.startsAt).getDate()}</strong><small className="text-[10px] uppercase text-slate-500">{new Date(event.startsAt).toLocaleString(undefined, { month: 'short' })}</small></span></span><span className="min-w-0"><strong className="block truncate text-sm text-slate-900">{event.title}</strong><small className="text-slate-500">{event.spotsLeft ? `${event.spotsLeft} spots left` : 'Full'} · {event.location}</small></span></Link>)}</div> : <EmptyState icon={CalendarDays} title="No upcoming events" description="Published events from this club will appear here." />}</div></Card>
         </div>
         <Card className="h-fit"><h2 className="text-lg font-bold text-slate-900">Membership</h2><p className="mt-2 text-sm leading-6 text-slate-500">{club.joinPolicy === 'open' ? 'Join instantly and start taking part.' : 'Send a request and club leadership will review it.'}</p><p className="mt-4 text-sm text-slate-600">{club.memberCount} active members</p>{!user && <Link to="/login" state={{ from: { pathname: location.pathname } }} className="mt-4 inline-flex text-sm font-semibold text-brand">Log in to join</Link>}</Card>
       </div>

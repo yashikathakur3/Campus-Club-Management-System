@@ -16,5 +16,6 @@ These decisions are fixed for the Campus Club Management Platform:
 - Notifications are in-app only.
 - Only super admins can manage platform users. Actual role/active-state changes increment `tokenVersion`; the last active super admin is protected from demotion or deactivation.
 - Club access checks use `services/clubAccessService.js` and require an active `ClubMembership` with an allowed club role. A club's president is represented by its single active membership with `clubRole: president`.
+- Event capacity is reserved with an atomic conditional increment and `{event,user}` registration uniqueness; failed registration writes compensate the reserved count without Mongo transactions. Event detail reads lazily complete elapsed events while list reads remain side-effect free.
 - Test with Jest, Supertest, and mongodb-memory-server.
 - Commit after each phase.

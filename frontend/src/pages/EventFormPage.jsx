@@ -1,0 +1,48 @@
+import { useEffect, useMemo, useState } from 'react';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import toast from 'react-hot-toast';
+import { createEvent, getEvent, updateEvent, changeEventStatus } from '../api/events';
+import { listClubs } from '../api/clubs';
+import { useAuth } from '../context/AuthContext';
+import Button from '../components/ui/Button';
+import Card from '../components/ui/Card';
+import ConfirmDialog from '../components/ui/ConfirmDialog';
+import Input from '../components/ui/Input';
+import PageHeader from '../components/ui/PageHeader';
+import Select from '../components/ui/Select';
+import Textarea from '../components/ui/Textarea';
+import Badge from '../components/ui/Badge';
+
+function localInput(value) { if (!value) return ''; const date = new Date(value); return new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, 16); }
+function toIso(value) { return new Date(value).toISOString(); }
+const blank = { club: '', title: '', description: '', category: 'workshop', startsAt: '', endsAt: '', location: '', capacity: '30', registrationDeadline: '', posterUrl: '', visibility: 'public' };
+
+export default function EventFormPage() {
+  const { id } = useParams(); const editing = Boolean(id); const { user, memberships } = useAuth(); const navigate = useNavigate(); const [searchParams] = useSearchParams();
+  const [form, setForm] = useState(() => ({ ...blank, club: searchParams.get('club') || '' })); const [clubs, setClubs] = useState([]); const [event, setEvent] = useState(null); const [errors, setErrors] = useState({}); const [loading, setLoading] = useState(editing); const [saving, setSaving] = useState(false); const [confirm, setConfirm] = useState('');
+  const manageable = useMemo(() => user?.role === 'super_admin' ? null : (memberships || []).filter((m) => m.status === 'active' && ['president', 'coordinator'].includes(m.clubRole)).map((m) => m.club).filter(Boolean), [memberships, user]);
+  useEffect(() => { let active = true; const requests = [user?.role === 'super_admin' ? listClubs({ page: 1, limit: 50, sort: 'name' }).then((r) => r.data) : Promise.resolve(manageable || [])];
+    Promise.all(requests).then(([items]) => { if (active) setClubs(items); }).catch(() => {});
+    if (editing) getEvent(id).then((value) => { if (active) { setEvent(value); setForm({ club: value.club?._id || '', title: value.title, description: value.description, category: value.category, startsAt: localInput(value.startsAt), endsAt: localInput(value.endsAt), location: value.location, capacity: String(value.capacity), registrationDeadline: localInput(value.registrationDeadline), posterUrl: value.posterUrl || '', visibility: value.visibility }); } }).catch((failure) => toast.error(failure.message || 'Could not load this event.')).finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [editing, id, manageable, user]);
+  const selectedMembership = memberships?.find((m) => (m.club?._id === form.club || m.club?.slug === form.club) && m.status === 'active');
+  const coordinator = selectedMembership?.clubRole === 'coordinator'; const president = selectedMembership?.clubRole === 'president'; const isAdmin = user?.role === 'super_admin';
+  function update(key, value) { setForm((current) => ({ ...current, [key]: value })); setErrors((current) => ({ ...current, [key]: '' })); }
+  function validate() { const next = {}; if (!form.title.trim()) next.title = 'Enter an event title.'; if (!form.description.trim()) next.description = 'Enter an event description.'; if (!form.location.trim()) next.location = 'Enter a location.'; if (!form.club) next.club = 'Select a club.'; if (!form.startsAt || Number.isNaN(new Date(form.startsAt).getTime())) next.startsAt = 'Choose a valid start date and time.'; if (!form.endsAt || Number.isNaN(new Date(form.endsAt).getTime())) next.endsAt = 'Choose a valid end date and time.'; else if (form.startsAt && new Date(form.endsAt) <= new Date(form.startsAt)) next.endsAt = 'End must be after start.'; if (!Number.isInteger(Number(form.capacity)) || Number(form.capacity) < 1) next.capacity = 'Capacity must be a whole number of at least 1.'; if (form.registrationDeadline && form.startsAt && new Date(form.registrationDeadline) > new Date(form.startsAt)) next.registrationDeadline = 'Deadline must be at or before start.'; if (form.posterUrl && !/^https?:\/\//i.test(form.posterUrl)) next.posterUrl = 'Enter a valid URL.'; setErrors(next); return Object.keys(next).length === 0; }
+  async function save(eventSubmit) { eventSubmit?.preventDefault(); if (!validate()) return; setSaving(true); try { const payload = { ...form, capacity: Number(form.capacity), startsAt: toIso(form.startsAt), endsAt: toIso(form.endsAt), registrationDeadline: form.registrationDeadline ? toIso(form.registrationDeadline) : toIso(form.startsAt), posterUrl: form.posterUrl || undefined }; const saved = editing ? await updateEvent(id, payload) : await createEvent(form.club, payload); toast.success(editing ? 'Event saved.' : coordinator ? 'Draft saved.' : 'Event created as a draft.'); navigate(`/events/${saved._id}`); } catch (failure) { toast.error(failure.message || 'Could not save event.'); } finally { setSaving(false); } }
+  async function statusAction(action) { setSaving(true); try { await changeEventStatus(id, action); toast.success(action === 'publish' ? 'Event published.' : 'Event cancelled.'); navigate(`/events/${id}`); } catch (failure) { toast.error(failure.message || 'Could not update event status.'); } finally { setSaving(false); setConfirm(''); } }
+  if (loading) return <div className="p-8 text-sm text-slate-500">Loading event…</div>;
+  return <div className="mx-auto max-w-4xl"><PageHeader eyebrow={editing ? 'Event management' : 'Club workspace'} title={editing ? 'Edit event' : 'Create an event'} description="Share the details students need to plan and register." />
+    {event && <div className="mb-4 flex items-center gap-2"><Badge variant={event.status === 'published' ? 'success' : event.status === 'cancelled' ? 'danger' : 'neutral'}>{event.status}</Badge><Link className="text-sm font-medium text-brand" to={`/events/${id}`}>View event</Link></div>}
+    <form onSubmit={save}><Card className="space-y-5"><Select label="Organizing club" value={form.club} disabled={editing} error={errors.club} onChange={(e) => update('club', e.target.value)}><option value="">Choose a club</option>{clubs.map((club) => <option key={club._id} value={club._id}>{club.name}</option>)}</Select>
+      <Input label="Event title" value={form.title} maxLength={160} error={errors.title} onChange={(e) => update('title', e.target.value)} />
+      <Textarea label="Description" value={form.description} maxLength={10000} error={errors.description} onChange={(e) => update('description', e.target.value)} />
+      <div className="grid gap-4 sm:grid-cols-2"><Select label="Category" value={form.category} onChange={(e) => update('category', e.target.value)}>{['workshop', 'competition', 'social', 'meeting', 'talk', 'other'].map((value) => <option key={value} value={value}>{value}</option>)}</Select><Select label="Visibility" value={form.visibility} onChange={(e) => update('visibility', e.target.value)}><option value="public">Public</option><option value="members_only">Club members only</option></Select><Input type="datetime-local" label="Starts at" value={form.startsAt} error={errors.startsAt} onChange={(e) => update('startsAt', e.target.value)} /><Input type="datetime-local" label="Ends at" value={form.endsAt} error={errors.endsAt} onChange={(e) => update('endsAt', e.target.value)} /><Input type="datetime-local" label="Registration deadline" hint="Leave blank to close registration when the event starts." value={form.registrationDeadline} error={errors.registrationDeadline} onChange={(e) => update('registrationDeadline', e.target.value)} /><Input type="number" min="1" step="1" label="Capacity" value={form.capacity} error={errors.capacity} onChange={(e) => update('capacity', e.target.value)} /></div>
+      <Input label="Location" maxLength={240} value={form.location} error={errors.location} onChange={(e) => update('location', e.target.value)} /><Input type="url" label="Poster URL (optional)" value={form.posterUrl} error={errors.posterUrl} onChange={(e) => update('posterUrl', e.target.value)} />
+      {coordinator && <p className="rounded-lg bg-amber-50 p-3 text-sm text-amber-800">As a club coordinator, you can save this event as a draft. A club president or super admin can publish it.</p>}
+      <div className="flex flex-wrap justify-between gap-3 border-t border-slate-100 pt-5"><Button type="submit" loading={saving}>{editing ? 'Save changes' : 'Save draft'}</Button>{editing && <div className="flex gap-2">{event?.status === 'draft' && (president || isAdmin) && <Button type="button" variant="secondary" onClick={() => setConfirm('publish')}>Publish</Button>}{['draft', 'published'].includes(event?.status) && (president || isAdmin) && <Button type="button" variant="danger" onClick={() => setConfirm('cancel')}>Cancel event</Button>}</div>}</div>
+    </Card></form>
+    <ConfirmDialog open={Boolean(confirm)} onClose={() => setConfirm('')} onConfirm={() => statusAction(confirm)} title={confirm === 'publish' ? 'Publish this event?' : 'Cancel this event?'} description={confirm === 'publish' ? 'Students will be able to find and register for the event.' : 'Registrants will be notified and their registration history will be kept.'} confirmLabel={confirm === 'publish' ? 'Publish event' : 'Cancel event'} variant={confirm === 'publish' ? 'primary' : 'danger'} />
+  </div>;
+}

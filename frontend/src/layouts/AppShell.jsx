@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Bell, ChevronDown, LayoutDashboard, LogOut, Menu, ShieldCheck, UserRound, X, UsersRound, Compass, Plus } from 'lucide-react';
+import { Bell, ChevronDown, LayoutDashboard, LogOut, Menu, ShieldCheck, UserRound, X, UsersRound, Compass, Plus, CalendarDays } from 'lucide-react';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import clsx from 'clsx';
 import { useAuth } from '../context/AuthContext';
@@ -9,6 +9,8 @@ const navigation = [
   { to: '/app/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/clubs', label: 'Clubs', icon: Compass },
   { to: '/app/clubs/mine', label: 'My Clubs', icon: UsersRound },
+  { to: '/events', label: 'Events', icon: CalendarDays },
+  { to: '/app/my-events', label: 'My Events', icon: CalendarDays },
   { to: '/app/profile', label: 'Profile', icon: UserRound },
 ];
 

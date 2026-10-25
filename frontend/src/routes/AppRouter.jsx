@@ -20,6 +20,11 @@ import MyClubsPage from '../pages/MyClubsPage';
 import CreateClubPage from '../pages/CreateClubPage';
 import EditClubPage from '../pages/EditClubPage';
 import ManageClubPage from '../pages/ManageClubPage';
+import EventDirectoryPage from '../pages/EventDirectoryPage';
+import EventDetailPage from '../pages/EventDetailPage';
+import MyEventsPage from '../pages/MyEventsPage';
+import EventFormPage from '../pages/EventFormPage';
+import EventRegistrationsPage from '../pages/EventRegistrationsPage';
 
 function PublicOnly({ children }) {
   const { user } = useAuth();
@@ -36,6 +41,8 @@ export default function AppRouter() {
         <Route index element={<LandingPage />} />
         <Route path="clubs" element={<ClubDirectoryPage />} />
         <Route path="clubs/:id" element={<ClubDetailPage />} />
+        <Route path="events" element={<EventDirectoryPage />} />
+        <Route path="events/:id" element={<EventDetailPage />} />
         <Route path="login" element={<PublicOnly><LoginPage /></PublicOnly>} />
         <Route path="register" element={<PublicOnly><RegisterPage /></PublicOnly>} />
       </Route>
@@ -46,6 +53,10 @@ export default function AppRouter() {
           <Route path="dashboard" element={<DashboardPage />} />
           <Route path="profile" element={<ProfilePage />} />
           <Route path="clubs/mine" element={<MyClubsPage />} />
+          <Route path="my-events" element={<MyEventsPage />} />
+          <Route path="events/new" element={<EventFormPage />} />
+          <Route path="events/:id/edit" element={<EventFormPage />} />
+          <Route path="events/:id/registrations" element={<EventRegistrationsPage />} />
           <Route element={<RoleRoute allowedRoles={['super_admin']} />}>
             <Route path="admin/users" element={<AdminUsersPage />} />
             <Route path="clubs/new" element={<CreateClubPage />} />
