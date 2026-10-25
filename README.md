@@ -4,13 +4,25 @@ Campus club management platform built with React, Vite, Tailwind CSS, Express, a
 
 ## Run the backend on Windows
 
+Open two PowerShell terminals from `campus-club-platform`.
+
+Backend terminal:
+
 ```powershell
 cd backend
 npm install
 npm run dev
 ```
 
-The backend expects a local MongoDB server and configuration in `backend/.env`. Check `backend/.env.example` for the required keys.
+Frontend terminal:
+
+```powershell
+cd frontend
+npm install
+npm run dev
+```
+
+The backend expects a local MongoDB server and configuration in `backend/.env`. Check `backend/.env.example` for its required keys. The frontend API base URL is set in `frontend/.env` from `frontend/.env.example`.
 
 ## Provision the first Super Admin
 
