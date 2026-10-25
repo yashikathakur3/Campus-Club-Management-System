@@ -32,6 +32,10 @@ All components are in `frontend/src/components/ui` and accept normal class compo
 - `PageHeader`: consistent page title, description, eyebrow, and optional action.
 - `SearchInput`: labelled search field that emits trimmed input after a 300ms debounce using `hooks/useDebounce`.
 
+## Phase 4 account pages
+
+The Profile page uses the shared `Tabs`, `Input`, `Select`, `Textarea`, `Avatar`, and `Badge` components for profile editing and password security. The admin Users page uses responsive desktop tables and mobile cards, shared search/filter/pagination components, status and role badges, skeletons, an empty state, and `ConfirmDialog` before role or account status changes. Only super admins see the Users navigation item; the admin route also enforces the role at the router boundary.
+
 ## Accessibility
 
 Use semantic headings and navigation landmarks, visible focus indicators, explicit form labels, accessible names for icon-only controls, and reduced-motion-safe transitions. Sidebar navigation collapses into a dismissible mobile drawer. Notifications are intentionally disabled until Phase 8 wires the real notification center; no unread count is fabricated.

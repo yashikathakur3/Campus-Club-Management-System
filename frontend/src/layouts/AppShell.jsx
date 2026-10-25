@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Bell, ChevronDown, LayoutDashboard, LogOut, Menu, UserRound, X } from 'lucide-react';
+import { Bell, ChevronDown, LayoutDashboard, LogOut, Menu, ShieldCheck, UserRound, X } from 'lucide-react';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import clsx from 'clsx';
 import { useAuth } from '../context/AuthContext';
@@ -10,7 +10,8 @@ const navigation = [
   { to: '/app/profile', label: 'Profile', icon: UserRound },
 ];
 
-function Sidebar({ open, onClose }) {
+function Sidebar({ open, onClose, user }) {
+  const items = user?.role === 'super_admin' ? [...navigation.slice(0, 1), { to: '/app/admin/users', label: 'Users', icon: ShieldCheck }, navigation[1]] : navigation;
   return <>
     {open && <button type="button" aria-label="Close navigation" onClick={onClose} className="fixed inset-0 z-40 bg-slate-950/50 md:hidden" />}
     <aside className={clsx('fixed inset-y-0 left-0 z-50 flex w-64 flex-col bg-navy text-white transition-transform duration-180 motion-reduce:transition-none', open ? 'translate-x-0' : '-translate-x-full md:translate-x-0')}>
@@ -23,7 +24,7 @@ function Sidebar({ open, onClose }) {
       </div>
       <nav aria-label="App navigation" className="flex-1 space-y-1 px-3 py-6">
         <p className="px-3 pb-2 text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">Workspace</p>
-        {navigation.map(({ to, label, icon: Icon }) => <NavLink
+        {items.map(({ to, label, icon: Icon }) => <NavLink
           key={to}
           to={to}
           onClick={onClose}
@@ -46,7 +47,7 @@ export default function AppShell() {
   const [profileOpen, setProfileOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const page = navigation.find((item) => item.to === location.pathname)?.label || 'Campus Club';
+  const page = [...navigation, { to: '/app/admin/users', label: 'Users' }].find((item) => item.to === location.pathname)?.label || 'Campus Club';
 
   function handleLogout() {
     logout();
@@ -55,7 +56,7 @@ export default function AppShell() {
 
   return (
     <div className="min-h-screen bg-page">
-      <Sidebar open={drawerOpen} onClose={() => setDrawerOpen(false)} />
+      <Sidebar open={drawerOpen} onClose={() => setDrawerOpen(false)} user={user} />
       <div className="min-h-screen md:pl-64">
         <header className="sticky top-0 z-30 flex h-[72px] items-center justify-between border-b border-slate-200 bg-white/95 px-4 backdrop-blur sm:px-6 lg:px-8">
           <div className="flex min-w-0 items-center gap-3">

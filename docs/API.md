@@ -72,6 +72,24 @@ Requires a valid access token. Accepts one or more of `name`, `department`, `yea
 
 Errors: 400 `VALIDATION_ERROR`; 401 `UNAUTHENTICATED`; 403 `ACCOUNT_DISABLED`; 409 `CONFLICT` for duplicate student ID.
 
+## Users (super admin only)
+
+All `/users` routes require a valid access token belonging to an active `super_admin`. Missing/invalid tokens return 401; other authenticated roles receive 403. User responses omit `passwordHash` and `tokenVersion`.
+
+### `GET /api/v1/users`
+
+Query parameters: `page` (default 1), `limit` (default 20, maximum 50), `q` (case-insensitive literal search across name, email, and student ID), `role` (`super_admin | member`), `isActive` (`true | false`), `sort` (`createdAt | name | email`, default `createdAt`), and `order` (`asc | desc`, default `desc`). Returns a user array with pagination metadata: `{ "success": true, "data": [], "meta": { "page": 1, "limit": 20, "total": 0, "totalPages": 0 } }`.
+
+### `GET /api/v1/users/:id`
+
+Returns `{ "success": true, "data": { "user": {} } }`. Invalid MongoDB IDs return 400; missing users return 404.
+
+### `PATCH /api/v1/users/:id`
+
+Strict JSON body accepts one or both of `role` (`super_admin | member`) and `isActive` (boolean). Unknown fields and an empty body return 400. Returns `{ "success": true, "data": { "user": {} } }`. A super admin cannot change their own role or deactivate themselves (400 `SELF_MODIFICATION_FORBIDDEN`). The last active super admin cannot be demoted or deactivated (409 `LAST_SUPER_ADMIN`). Every actual role or active-state change increments `tokenVersion`, invalidating that user's existing access tokens. Missing users return 404.
+
+Club role checks are exposed by `services/clubAccessService.js`. Its `getMembership(userId, clubId)` placeholder deliberately returns no membership until Phase 5 creates `ClubMembership`; `assertClubRole` already grants super admins access and rejects other users until that membership implementation exists.
+
 ### `PATCH /api/v1/auth/me/password`
 
 Requires a valid access token. Request: `{ "currentPassword": "CampusPass123", "newPassword": "NewCampusPass456" }`. On success, increments `tokenVersion` to invalidate previous tokens and returns HTTP 200 with `{ "success": true, "data": { "user": {}, "token": "<new access token>" } }`.

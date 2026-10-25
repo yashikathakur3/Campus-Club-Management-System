@@ -6,6 +6,7 @@ const rateLimit = require('express-rate-limit');
 const { env, validateEnv } = require('./config/env');
 const routes = require('./routes');
 const authRoutes = require('./routes/authRoutes');
+const userRoutes = require('./routes/userRoutes');
 const notFound = require('./middleware/notFound');
 const errorHandler = require('./middleware/errorHandler');
 
@@ -19,6 +20,7 @@ if (config.NODE_ENV === 'development') app.use(morgan('dev'));
 app.use('/api', rateLimit({ windowMs: 15 * 60 * 1000, limit: 100, standardHeaders: 'draft-7', legacyHeaders: false }));
 app.use('/api/v1', routes);
 app.use('/api/v1/auth', authRoutes);
+app.use('/api/v1/users', userRoutes);
 app.use(notFound);
 app.use(errorHandler);
 

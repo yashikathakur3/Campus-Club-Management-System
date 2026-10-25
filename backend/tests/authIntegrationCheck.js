@@ -7,6 +7,8 @@ const app = require('../app');
 const User = require('../models/User');
 const { seedAdmin } = require('../scripts/seedAdmin');
 const { signAccessToken } = require('../utils/token');
+const clubAccessService = require('../services/clubAccessService');
+const userService = require('../services/userService');
 
 function assertNoSecrets(value) {
   if (!value || typeof value !== 'object') return;
@@ -115,6 +117,54 @@ async function main() {
     const admin = await User.findOne({ email: seedInput.email }).select('+passwordHash');
     assert.equal(await bcrypt.compare(seedInput.password, admin.passwordHash), true);
     assertNoSecrets(admin.toJSON());
+
+    assert.equal(await clubAccessService.assertClubRole(admin, new mongoose.Types.ObjectId(), ['president']), null);
+    const adminToken = signAccessToken(admin);
+    const currentMember = await User.findById(stored.id);
+    const memberToken = signAccessToken(currentMember);
+    for (const route of ['/api/v1/users', `/api/v1/users/${stored.id}`, `/api/v1/users/${stored.id}`]) {
+      const method = route.endsWith(stored.id) && route !== '/api/v1/users' ? 'patch' : 'get';
+      const anonymous = request(app)[method](route);
+      if (method === 'patch') anonymous.send({ isActive: false });
+      await anonymous.expect(401);
+      const forbidden = request(app)[method](route).set('Authorization', `Bearer ${memberToken}`);
+      if (method === 'patch') forbidden.send({ isActive: false });
+      await forbidden.expect(403);
+    }
+    response = await request(app).get('/api/v1/users').set('Authorization', `Bearer ${adminToken}`).expect(200);
+    assert.equal(response.body.meta.limit, 20);
+    assert(response.body.meta.total >= 3);
+    response = await request(app).get('/api/v1/users?page=1&limit=1&role=member&isActive=true&sort=name&order=asc')
+      .set('Authorization', `Bearer ${adminToken}`).expect(200);
+    assert.equal(response.body.data.length, 1);
+    assert.equal(response.body.meta.limit, 1);
+    response = await request(app).get('/api/v1/users?q=%5B.*%5D')
+      .set('Authorization', `Bearer ${adminToken}`).expect(200);
+    assert.equal(response.body.data.length, 0, 'search input is treated literally, not as a regex');
+    await request(app).get('/api/v1/users/not-an-object-id').set('Authorization', `Bearer ${adminToken}`).expect(400);
+    await request(app).patch(`/api/v1/users/${admin.id}`).set('Authorization', `Bearer ${adminToken}`)
+      .send({ role: 'member' }).expect(400);
+    await request(app).patch(`/api/v1/users/${admin.id}`).set('Authorization', `Bearer ${adminToken}`)
+      .send({ name: 'Unknown' }).expect(400);
+    await request(app).patch(`/api/v1/users/${admin.id}`).set('Authorization', `Bearer ${adminToken}`)
+      .send({ role: 'member' }).expect(400);
+    await assert.rejects(userService.updateUser(new mongoose.Types.ObjectId(), admin.id, { role: 'member' }),
+      (error) => error.code === 'LAST_SUPER_ADMIN');
+
+    const secondAdmin = await User.create({ name: 'Second Admin', email: 'second-admin@example.test', passwordHash: await bcrypt.hash('AnotherPass123', 12), role: 'super_admin' });
+    const target = await User.create({ name: 'Searchable Person', email: 'searchable@example.test', studentId: 'Q-777', passwordHash: await bcrypt.hash('TargetPass123', 12) });
+    const oldTargetToken = signAccessToken(target);
+    response = await request(app).patch(`/api/v1/users/${target.id}`).set('Authorization', `Bearer ${adminToken}`)
+      .send({ role: 'super_admin' }).expect(200);
+    assert.equal(response.body.data.user.role, 'super_admin');
+    await request(app).get('/api/v1/auth/me').set('Authorization', `Bearer ${oldTargetToken}`).expect(401);
+    response = await request(app).get('/api/v1/users?q=Q-777&role=super_admin')
+      .set('Authorization', `Bearer ${adminToken}`).expect(200);
+    assert.equal(response.body.data.length, 1);
+    await request(app).patch(`/api/v1/users/${secondAdmin.id}`).set('Authorization', `Bearer ${adminToken}`)
+      .send({ isActive: false }).expect(200);
+    await request(app).patch(`/api/v1/users/${admin.id}`).set('Authorization', `Bearer ${adminToken}`)
+      .send({ role: 'member' }).expect(400);
 
     console.log('Authentication integration checks passed');
   } finally {

@@ -11,6 +11,8 @@ import DashboardPage from '../pages/DashboardPage';
 import ProfilePage from '../pages/ProfilePage';
 import ForbiddenPage from '../pages/ForbiddenPage';
 import NotFoundPage from '../pages/NotFoundPage';
+import AdminUsersPage from '../pages/AdminUsersPage';
+import RoleRoute from './RoleRoute';
 
 function PublicOnly({ children }) {
   const { user } = useAuth();
@@ -34,6 +36,9 @@ export default function AppRouter() {
           <Route index element={<Navigate to="dashboard" replace />} />
           <Route path="dashboard" element={<DashboardPage />} />
           <Route path="profile" element={<ProfilePage />} />
+          <Route element={<RoleRoute allowedRoles={['super_admin']} />}>
+            <Route path="admin/users" element={<AdminUsersPage />} />
+          </Route>
         </Route>
       </Route>
       <Route path="*" element={<NotFoundPage />} />

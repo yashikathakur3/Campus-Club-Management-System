@@ -14,5 +14,7 @@ These decisions are fixed for the Campus Club Management Platform:
 - Validate request input with Zod.
 - QR attendance uses a separate short-lived signed token.
 - Notifications are in-app only.
+- Only super admins can manage platform users. Actual role/active-state changes increment `tokenVersion`; the last active super admin is protected from demotion or deactivation.
+- Club access checks use `services/clubAccessService.js`; its membership lookup remains a documented placeholder until Phase 5 introduces `ClubMembership`.
 - Test with Jest, Supertest, and mongodb-memory-server.
 - Commit after each phase.

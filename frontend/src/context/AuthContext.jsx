@@ -53,7 +53,12 @@ export function AuthProvider({ children }) {
     return data;
   }, []);
 
-  const value = useMemo(() => ({ ...session, login, register, logout, refreshMe }), [session, login, register, logout, refreshMe]);
+  const updateUser = useCallback((user, token) => {
+    if (token) writeToken(token);
+    setSession((current) => ({ ...current, user, token: token || current.token, loading: false }));
+  }, []);
+
+  const value = useMemo(() => ({ ...session, login, register, logout, refreshMe, updateUser }), [session, login, register, logout, refreshMe, updateUser]);
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
