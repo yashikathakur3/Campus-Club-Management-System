@@ -98,6 +98,8 @@ Errors: 400 `VALIDATION_ERROR` or `INVALID_CURRENT_PASSWORD`; 401 `UNAUTHENTICAT
 
 There is no public Super Admin registration endpoint. Set `SEED_ADMIN_EMAIL` and a strong `SEED_ADMIN_PASSWORD` in the local backend environment, then run `npm run seed:admin` from `backend`. The seed password must be at least 16 characters and include a letter, number, and symbol. The command is idempotent and never prints the password. If the configured email belongs to a regular member, the script refuses to change that account's role.
 
+For a local classroom/demo database, `npm run seed:demo` from `backend` adds labeled demo accounts, clubs, memberships, events, and registrations. It only runs against a MongoDB URI whose host is localhost/127.0.0.1, does not delete existing data, and refuses to change account roles or conflicting club/event records. A generated shared demo password and account emails are stored in the ignored local file `backend/.env.demo.local`; do not commit that file.
+
 ## Clubs and memberships
 
 Club categories are `technical`, `cultural`, `sports`, `academic`, `social_service`, `arts`, and `other`. Club membership roles are `member`, `coordinator`, and `president`; statuses are `pending`, `active`, `rejected`, `left`, and `removed`. A club has one active president membership. Membership uniqueness is enforced by a unique `{club,user}` index, including when a prior membership has left or been rejected; re-requests reuse that record.
